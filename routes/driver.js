@@ -35,11 +35,11 @@ router.post('/create', fetchadmin,
         body('password', 'password must be atleast 6 characters').isString().isLength({ min: 6,max:6 }),
     ],
     async (req, res) => {
-        let driver = Driver(req.body)
+        if (!validationResult(req).isEmpty()) {
+            return res.status(400).json({ success: false, errors: validationResult(req).array() });
+        }
         try {
-            if (!validationResult(req).isEmpty()) {
-                return res.status(400).json({ success: false, errors: validationResult(req).array() });
-            }
+            let driver = Driver(req.body)
             if (!req.admin) {
                 return res.status(401).send({ success: false, error: 'Please Authenticate' })
             }
@@ -90,8 +90,8 @@ router.post('/login',
         body('password', 'Enter password').exists().isLength({ min: 6,max:6 }),
     ],
     async (req, res) => {
-        const { truckID, password } = req.body
         try {
+            const { truckID, password } = req.body
             if (!validationResult(req).isEmpty()) {
                 return res.status(400).json({ success: false, errors: validationResult(req).array() });
             }
@@ -143,7 +143,8 @@ router.post('/fetch', fetchdriver, async (req, res) => {
 
 
 router.get('/all', fetchadmin, async (req, res) => {
-    if (!req.admin) {
+    try
+    {if (!req.admin) {
         return res.status(401).send({ success: false, error: 'please login' })
     }
     adminId = req.admin.id;
@@ -156,7 +157,10 @@ router.get('/all', fetchadmin, async (req, res) => {
         return res.status(204).send({ success: false, error: 'No reqes found' })
     }
     else {
-        res.send({ success: true, allRequest })
+        res.send({ success: true, Request:allRequest })
+    }} catch (error) {
+        res.status(500).send({ success: false, error: "Internal Server Error" });
+        console.error(error)
     }
 })
 
@@ -170,7 +174,8 @@ router.get('/all', fetchadmin, async (req, res) => {
             param('zone', 'Please enter the zone').exists()
         ],    
         async (req, res) => {
-            if (!req.admin) {
+            try
+            {if (!req.admin) {
                 return res.status(401).send({ success: false, error: 'please login' })
             }    
             adminId = req.admin.id;
@@ -186,8 +191,11 @@ router.get('/all', fetchadmin, async (req, res) => {
                 return res.status(204).send({ success: false, error: 'No reqes found' })
             }    
             else {
-                res.send({ success: true, allRequest })
-            }    
+                res.send({ success: true, Request:allRequest })
+            }}  catch (error) {
+                res.status(500).send({ success: false, error: "Internal Server Error" });
+                console.error(error)
+            }
         })    
     
             

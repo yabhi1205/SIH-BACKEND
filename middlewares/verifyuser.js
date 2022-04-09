@@ -8,9 +8,6 @@ const fetchuser = (req,res,next)=>{
     }
     try {
         const data = jwt.verify(token,JWT_SECRET)
-        if(!data.user){
-            return res.status(401).send({success: false,error:"Please authentiate with correct crediantials"})
-        }
         req.user=data.user
         next()
     } catch (error) {

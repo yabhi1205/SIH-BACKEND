@@ -8,9 +8,6 @@ const fetchmanager = (req,res,next)=>{
     }
     try {
         const data = jwt.verify(token,JWT_SECRET)
-        if(!data.driver){
-            return res.status(401).send({success: false,error:"Please authentiate with correct crediantials"})
-        }
         req.driver=data.driver
         next()
     } catch (error) {
