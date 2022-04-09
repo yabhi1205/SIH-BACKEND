@@ -4,10 +4,13 @@ const jwt = require('jsonwebtoken')
 const fetchuser = (req,res,next)=>{
     const token =req.header('auth-token')
     if (!token){
-        return res.status(401).send({success: false,error:"Please authentiate with correct crediantials1"})
+        return res.status(401).send({success: false,error:"Please authentiate with correct crediantials"})
     }
     try {
         const data = jwt.verify(token,JWT_SECRET)
+        if(!data.user){
+            return res.status(401).send({success: false,error:"Please authentiate with correct crediantials"})
+        }
         req.user=data.user
         next()
     } catch (error) {

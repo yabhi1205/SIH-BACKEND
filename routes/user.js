@@ -14,8 +14,6 @@ const fetchadmin = require('../middlewares/verifyadmin')
 
         // See all the users
 
-
-
         router.get('/all', fetchadmin, async (req, res) => {
             if (!req.admin) {
                 return res.status(401).send({ success: false, error: 'please login' })
@@ -33,7 +31,6 @@ const fetchadmin = require('../middlewares/verifyadmin')
                 res.send({ success: true, allRequest })
             }
         })
-        
         
 
 // to create a new user

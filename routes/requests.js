@@ -14,13 +14,10 @@ const Driver = require('../modals/driver');
     //  All the pending requests of the user
 
 
-
-
 router.get('/pending', fetchuser,
     async (req, res) => {
         try {
             userId = req.user.id;
-            console.log('abhinav')
             let userphone = await User.findById(userId).select(['name', 'phone'])
             if (!userphone) {
                 return res.status(401).send({ success: false, error: 'please login' })
@@ -231,47 +228,45 @@ router.get('/:pincode/:zone/:date/:time', fetchadmin, fetchdriver,
 
 router.post('/add', fetchuser,
     [
-        body('user', 'Please enter the customer id').exists(),
         body('time', 'Please enter the time').exists(),
         body('date', 'Please enter the date').exists(),
         body('wasteType', 'Please enter the waste type').exists(),
         body('amount', 'Please enter the amount').exists().isNumeric().isLength({ max: 2 }),
-        body("zone", 'Please enter the valid zone').exists(),
-        body('pincode', 'Please enter the valid pincode').exists().isNumeric()
     ],
     async (req, res) => {
         if (!validationResult(req).isEmpty()) {
+            console.log(validationResult(req).array())
             return res.status(400).json({ success: false, errors: validationResult(req).array() })
         }
         try {
-            let request = Requests(req.body)
+            let {time,date,wasteType,amount} = Requests(req.body)
             if (!req.user) {
                 return res.status(401).send({ success: false, error: 'Please login' })
             }
-            let finaluser = await User.findById(request.user)
-            let existsRequest = await Requests.findOne({
-                user: request.user,
-                time: request.time,
-                date: request.date,
-                wasteType: request.wasteType.toUpperCase(),
-                pincode: request.pincode,
-                amount: request.amount,
-                zone: request.zone.toUpperCase()
-            })
+            let finaluser = await User.findById(req.user.id).select(['pincode','zone'])
             if (!finaluser) {
                 return res.status(401).send({ success: false, error: "User dosn't exists" })
             }
+            let existsRequest = await Requests.findOne({
+                user: req.user.id,
+                time: time,
+                date:date,
+                wasteType: wasteType.toUpperCase(),
+                amount: amount,
+                pincode: finaluser.pincode,
+                zone: finaluser.zone.toUpperCase()
+            })
             if (existsRequest) {
                 return res.status(409).send({ success: false, error: "Already request exists" })
             }
             let newRequest = await Requests.create({
-                user: request.user,
-                time: request.time,
-                date: request.date,
-                wasteType: request.wasteType.toUpperCase(),
-                pincode: request.pincode,
-                amount: request.amount,
-                zone: request.zone.toUpperCase()
+                user: req.user.id,
+                time: time,
+                date: date,
+                wasteType: wasteType.toUpperCase(),
+                pincode: finaluser.pincode,
+                amount: amount,
+                zone: finaluser.zone.toUpperCase()
             })
             if (!newRequest) {
                 return res.status(400).send({ success: false, error: 'Request not created' })

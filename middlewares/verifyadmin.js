@@ -8,6 +8,9 @@ const fetchadmin = (req,res,next)=>{
     }
     try {
         const data = jwt.verify(token,JWT_SECRET)
+        if(!data.admin){
+            return res.status(401).send({success: false,error:"Please authentiate with correct crediantials"})
+        }
         req.admin=data.admin
         next()
     } catch (error) {
