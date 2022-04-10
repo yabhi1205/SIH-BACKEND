@@ -11,6 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET
 const router = express.Router()
 const fetchuser = require('../middlewares/verifyuser')
 const fetchadmin = require('../middlewares/verifyadmin')
+const fetchdriver = require('../middlewares/verifyadmin')
 
 // See all the users
 
@@ -135,6 +136,49 @@ router.post('/fetch', fetchuser, async (req, res) => {
         res.status(500).send({ success: false, error: "Internal Server Error" });
     }
 })
+
+
+router.get('/:id', fetchadmin, fetchdriver,
+    [
+        param('id', 'Please enter the id').exists()
+    ],
+    async (req, res) => {
+        if (!validationResult(req).isEmpty()) {
+            return res.status(400).json({ errors: validationResult(req).array() })
+        }
+        try {
+            let finaluser = null
+            if (req.admin) {
+                adminId = req.admin.id;
+                finaluser = await Admin.findById(adminId)
+            }
+            else {
+                if (req.driver) {
+                    driverId = req.driver.id;
+                    finaluser = await Driver.findById(driverId)
+                }
+            }
+            if (!req.admin && !req.driver) {
+                return res.status(401).send({ success: false, error: 'please login' })
+            }
+            if (!finaluser) {
+                return res.status(401).send({ success: false, error: 'please signup' })
+            }
+            let zoneRequest = await User.findById(req.params.id)
+            if (!zoneRequest) {
+                return res.status(401).send({ success: false, error: 'No request found' })
+            }
+            else {
+                res.send({ success: true, user: removepassword(zoneRequest) })
+            }
+
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ success: false, error: 'Internal server error' })
+        }
+    })
+
+
 
 // See all the users in pincode/zone
 
