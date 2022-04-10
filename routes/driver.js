@@ -4,17 +4,17 @@ const Driver = require('../modals/driver')
 const Admin = require('../modals/Admin')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
-const { body, validationResult,param } = require('express-validator');
+const { body, validationResult, param } = require('express-validator');
 const symbols = require('../validator/symbols')
 const removepassword = require('../validator/removepassword')
 const JWT_SECRET = process.env.JWT_SECRET
 const router = express.Router()
 const fetchdriver = require('../middlewares/verifydriver')
 const fetchadmin = require('../middlewares/verifyadmin')
-const driver = require('../modals/driver')
+const Request = require('../modals/Requests')
 
 
-        // to create a new driver
+// to create a new driver
 
 
 router.post('/create', fetchadmin,
@@ -25,14 +25,14 @@ router.post('/create', fetchadmin,
             }
             return true
         }),
-        body('pincode', 'Enter a valid pincode').isLength({ min: 6,max:6 }).isNumeric(),
-        body('truckID', 'Please enter the valid truckID').isLength({min:9,max:10}).custom(value=>{
-            if(!symbols.truck(value)){
+        body('pincode', 'Enter a valid pincode').isLength({ min: 6, max: 6 }).isNumeric(),
+        body('truckID', 'Please enter the valid truckID').isLength({ min: 9, max: 10 }).custom(value => {
+            if (!symbols.truck(value)) {
                 return Promise.reject('Enter the valid truck id')
             }
             return true
         }),
-        body('password', 'password must be atleast 6 characters').isString().isLength({ min: 6,max:6 }),
+        body('password', 'password must be atleast 6 characters').isString().isLength({ min: 6, max: 6 }),
     ],
     async (req, res) => {
         if (!validationResult(req).isEmpty()) {
@@ -72,7 +72,6 @@ router.post('/create', fetchadmin,
             }
         } catch (error) {
             res.status(404).send({ success: false, error: "Internal Server Error" })
-            console.error(error)
         }
     })
 
@@ -81,13 +80,13 @@ router.post('/create', fetchadmin,
 
 router.post('/login',
     [
-        body('truckID', 'Please enter the valid truckID').isLength({min:9,max:10}).custom(value=>{
-            if(!symbols.truck(value)){
+        body('truckID', 'Please enter the valid truckID').isLength({ min: 9, max: 10 }).custom(value => {
+            if (!symbols.truck(value)) {
                 return Promise.reject('Enter the valid truck id')
             }
             return true
         }),
-        body('password', 'Enter password').exists().isLength({ min: 6,max:6 }),
+        body('password', 'Enter password').exists().isLength({ min: 6, max: 6 }),
     ],
     async (req, res) => {
         try {
@@ -95,7 +94,7 @@ router.post('/login',
             if (!validationResult(req).isEmpty()) {
                 return res.status(400).json({ success: false, errors: validationResult(req).array() });
             }
-            let driver = await Driver.findOne({ truckID:truckID.toUpperCase() })
+            let driver = await Driver.findOne({ truckID: truckID.toUpperCase() })
             if (!driver) {
                 return res.status(401).json({ success: false, error: "Please try to login with correct credentials" });
             }
@@ -105,14 +104,13 @@ router.post('/login',
             }
             const data = {
                 driver: {
-                    truckID: driver._id
+                    id: driver._id
                 }
             }
             const authtoken = jwt.sign(data, JWT_SECRET);
             res.json({ success: true, user: removepassword(driver), authtoken })
 
         } catch (error) {
-            console.error(error.message);
             res.status(500).send({ success: false, error: "Internal Server Error" });
         }
     })
@@ -133,71 +131,105 @@ router.post('/fetch', fetchdriver, async (req, res) => {
         }
     } catch (error) {
         res.status(500).send({ success: false, error: "Internal Server Error" });
-        console.error(error)
     }
 })
 
 
-                // See all the drivers
+// See all the drivers
 
 
 
 router.get('/all', fetchadmin, async (req, res) => {
-    try
-    {if (!req.admin) {
-        return res.status(401).send({ success: false, error: 'please login' })
-    }
-    adminId = req.admin.id;
-    let finaluser = await Admin.findById(adminId)
-    if (!finaluser) {
-        return res.status(401).send({ success: false, error: 'please login' })
-    }
-    let allRequest = await Driver.find()
-    if (!allRequest) {
-        return res.status(204).send({ success: false, error: 'No reqes found' })
-    }
-    else {
-        res.send({ success: true, Request:allRequest })
-    }} catch (error) {
+    try {
+        if (!req.admin) {
+            return res.status(401).send({ success: false, error: 'please login' })
+        }
+        adminId = req.admin.id;
+        let finaluser = await Admin.findById(adminId)
+        if (!finaluser) {
+            return res.status(401).send({ success: false, error: 'please login' })
+        }
+        let allRequest = await Driver.find()
+        if (!allRequest) {
+            return res.status(204).send({ success: false, error: 'No reqes found' })
+        }
+        else {
+            res.send({ success: true, Request: allRequest })
+        }
+    } catch (error) {
         res.status(500).send({ success: false, error: "Internal Server Error" });
-        console.error(error)
     }
 })
 
 
-        //  See all the drivers in pincode/zone
+router.get('/requests/all', fetchdriver, async (req, res) => {
+        try {
+            if (!req.driver) {
+                return res.status(401).send({ success: false, error: 'please login1' })
+            }
+            adminId = req.driver.id;
+            let finaluser = await Driver.findById(adminId)
+            if (!finaluser) {
+                return res.status(401).send({ success: false, error: 'please login2' })
+            }
+            let d = new Date()
+            let dd = d.getDate()
+            let dm = d.getMonth()+1
+            let dt = d.getHours()
+            let finaltime = symbols.slot(dt)
+            let allRequest = await Request.find({
+                pincode: finaluser.pincode,
+                zone: finaluser.zone.toUpperCase(),
+                date: `${dd}-${dm}`,
+                time : finaltime
+            })
+            if (!allRequest) {
+                return res.status(204).send({ success: false, error: 'No reqes found' })
+            }
+            else {
+                res.send({ success: true, Request: allRequest })
+            }
+        } catch (error) {
+            res.status(500).send({ success: false, error: "Internal Server Error" });
+        }
+    })
 
 
-        router.get('/:pincode/:zone', fetchadmin,
-        [
-            param('pincode', 'Please enter the valid pincode').isNumeric(),
-            param('zone', 'Please enter the zone').exists()
-        ],    
-        async (req, res) => {
-            try
-            {if (!req.admin) {
+//  See all the drivers in pincode/zone
+
+
+router.get('/:pincode/:zone', fetchadmin,
+    [
+        param('pincode', 'Please enter the valid pincode').isNumeric(),
+        param('zone', 'Please enter the zone').exists()
+    ],
+    async (req, res) => {
+        try {
+            if (!req.admin) {
                 return res.status(401).send({ success: false, error: 'please login' })
-            }    
+            }
             adminId = req.admin.id;
             let finaluser = await Admin.findById(adminId)
             if (!finaluser) {
                 return res.status(401).send({ success: false, error: 'please login' })
-            }    
+            }
             let allRequest = await Driver.find({
-                pincode:req.params.pincode,
-                zone:req.params.zone.toUpperCase()
-            })    
+                pincode: req.params.pincode,
+                zone: req.params.zone.toUpperCase()
+            })
             if (!allRequest) {
                 return res.status(204).send({ success: false, error: 'No reqes found' })
-            }    
-            else {
-                res.send({ success: true, Request:allRequest })
-            }}  catch (error) {
-                res.status(500).send({ success: false, error: "Internal Server Error" });
-                console.error(error)
             }
-        })    
-    
-            
+            else {
+                res.send({ success: true, Request: allRequest })
+            }
+        } catch (error) {
+            res.status(500).send({ success: false, error: "Internal Server Error" });
+        }
+    })
+
+
+
+
 
 module.exports = router

@@ -21,7 +21,7 @@ router.get('/pending', fetchuser,
                 return res.status(401).send({ success: false, error: 'please login' })
             }
             userId = req.user.id;
-            let userphone = await User.findById(userId).select(id)
+            let userphone = await User.findById(userId).select('id')
             if (!userphone) {
                 return res.status(401).send({ success: false, error: 'please login' })
             }
@@ -34,6 +34,7 @@ router.get('/pending', fetchuser,
             }
 
         } catch (error) {
+            console.log(error)
             res.status(500).send({ success: false, error: 'Internal server error' })
         }
     })
@@ -294,7 +295,7 @@ router.post('/edited/:id', fetchuser,
             if (!req.user) {
                 return res.status(401).send({ success: false, error: 'Please login' })
             }
-            let finaluser = await User.findById(req.user.id).select(id)
+            let finaluser = await User.findById(req.user.id).select('id')
             if (!finaluser) {
                 return res.status(401).send({ success: false, error: "User dosn't exists" })
             }
